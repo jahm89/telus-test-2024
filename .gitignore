@@ -9,4 +9,5 @@
 !/public/files/.gitkeep
 /var/
 /vendor/
+/.env
 ###< symfony/framework-bundle ###

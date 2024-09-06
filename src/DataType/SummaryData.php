@@ -1,7 +1,7 @@
 <?php
 namespace App\DataType;
 
-class TransformedData
+class SummaryData
 {
     private $totalRecords;
     private $totalGenders;
@@ -79,7 +79,6 @@ class TransformedData
         return $this->totalOs;
     }
 
-    // Setters
     public function setTotalRecords(int $totalRecords): void
     {
         $this->totalRecords = $totalRecords;
@@ -125,7 +124,6 @@ class TransformedData
         }
     }
 
-    // Example method to add data
     public function addData(int $records, string $gender, string $city, string $age, string $os): void
     {
         $this->totalRecords += $records;

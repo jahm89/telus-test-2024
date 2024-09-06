@@ -9,7 +9,8 @@ use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
-use App\DataType\TransformedData;
+use App\DataType\SummaryData;
+use App\Service\EtlProcessService;
 
 use DateTime;
 
@@ -22,13 +23,21 @@ class EtlProcessCommand extends Command
 {
     private $httpClient;
     const PATH_STORE_FOLDER = 'public/files/';
-    private $transformedData;
+    private SummaryData $summaryData;
+    private $apiUrl;
+    private EtlProcessService $etlProcessService;
 
-    public function __construct(HttpClientInterface $httpClient, TransformedData $transformedData)
+    public function __construct(
+        HttpClientInterface $httpClient, 
+        SummaryData $summaryData,
+        EtlProcessService $etlProcessService
+    )
     {
         parent::__construct();
         $this->httpClient = $httpClient;
-        $this->transformedData = $transformedData;
+        $this->summaryData = $summaryData;
+        $this->apiUrl = $_ENV['API_URL'];
+        $this->etlProcessService = $etlProcessService;
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
@@ -41,7 +50,7 @@ class EtlProcessCommand extends Command
         $summaryFileName = self::PATH_STORE_FOLDER . "summary_{$dateString}.csv";
 
         // Fetch data from API
-        $response = $this->httpClient->request('GET', 'https://dummyjson.com/users');
+        $response = $this->httpClient->request('GET', $this->apiUrl);
         $data = $response->toArray();
         file_put_contents($rawDataFileName, json_encode($data));
 
@@ -54,23 +63,23 @@ class EtlProcessCommand extends Command
         foreach ($data['users'] as $user) {
             $os = $this->getOs($user['userAgent']);
             $csv->insertOne([$user['id'], $user['gender'], $user['age'], $user['address']['city'], $os]);
-            $this->transformedData->addData(1, $user['gender'], $user['address']['city'], $user['age'], $os);
+            $this->summaryData->addData(1, $user['gender'], $user['address']['city'], $user['age'], $os);
         }
 
         $output->writeln("ETL saved to $etlFileName");
 
         // Create Summary
         $csvSummary = Writer::createFromPath($summaryFileName, 'w+');
-        $csvSummary->insertOne(['registre', $this->transformedData->getTotalRecords()]);
+        $csvSummary->insertOne(['registre', $this->summaryData->getTotalRecords()]);
         $csvSummary->insertOne(['gender', 'total']);
 
-        foreach ($this->transformedData->getTotalGenders() as $key => $value) {
+        foreach ($this->summaryData->getTotalGenders() as $key => $value) {
             $csvSummary->insertOne([$key, $value]);
         }
 
         $csvSummary->insertOne([]);
         $csvSummary->insertOne(['age', 'male', 'female', 'other']);
-        foreach ($this->transformedData->getTotalAges() as $key => $value) {
+        foreach ($this->summaryData->getTotalAges() as $key => $value) {
             $row = [$key];
             foreach ($value as $_key => $_value) {
                 $row[] = $_value;
@@ -80,7 +89,7 @@ class EtlProcessCommand extends Command
 
         $csvSummary->insertOne([]);
         $csvSummary->insertOne(['city', 'male', 'female', 'other']);
-        foreach ($this->transformedData->getTotalCities() as $key => $value) {
+        foreach ($this->summaryData->getTotalCities() as $key => $value) {
             $row = [$key];
             foreach ($value as $_key => $_value) {
                 $row[] = $_value;
@@ -90,12 +99,16 @@ class EtlProcessCommand extends Command
         
         $csvSummary->insertOne([]);
         $csvSummary->insertOne(['os', 'total']);
-        foreach ($this->transformedData->getTotalOs() as $key => $value) {
+        foreach ($this->summaryData->getTotalOs() as $key => $value) {
             $csvSummary->insertOne([$key, $value]);
         }
 
         $output->writeln("Summary saved to $summaryFileName");
-        
+
+        $output->writeln("Storing database records...");
+        $this->etlProcessService->create($this->summaryData, $summaryFileName, $today);
+        $output->writeln("Storing database Done!");
+
         return Command::SUCCESS;
     }
 
