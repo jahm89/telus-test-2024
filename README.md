@@ -19,7 +19,7 @@ Before you begin, ensure you have the following installed on your system:
 1. **Clone the Repository**
 
    ```bash
-   git clone https://github.com/your-username/your-project.git
+   git clone https://github.com/jahm89/telus-test-2024
    cd your-project
    ```
 
@@ -28,30 +28,28 @@ Before you begin, ensure you have the following installed on your system:
     composer install
    ```
 
-3. **Set Up Environment Variables**
-    Create .env file and add:
-    # API
-    API_URL=https://dummyjson.com/users
-    # DATABASE
-    DATABASE_URL=mysql://USER:PASSWORD@HOST:PORT/telus_test?serverVersion=5.7.44&charset=utf8mb4
+3. **Set Up Environment Variables, Create .env file and add:**
+    
+    - API_URL=https://dummyjson.com/users
+    - DATABASE_URL=mysql://USER:PASSWORD@HOST:PORT/telus_test?serverVersion=5.7.44&charset=utf8mb4
+    - SFTP_HOST=
+    - SFTP_PORT=
+    - SFTP_USER=
+    - SFTP_PASSWORD=
+    - SFTP_PATH=[PATH-TO-UPLOAD]
 
-    # SFTP
-    SFTP_HOST=
-    SFTP_PORT=
-    SFTP_USER=
-    SFTP_PASSWORD=
-    SFTP_PATH=[PATH-TO-UPLOAD]
-
-4. **Create the database**
+4. **Create the database**  
     Run the db.sql script
 
-5. **Run the command**
-    You can either run the command manually: php bin/console app:etl-process-data
-    or set up a cron
+5. **Run the command**  
+    You can run the command manually: 
 
-6. **Set Up A Cron Job**
+    ```
+        php bin/console app:etl-process-data
+    ```
+6. **Set Up A Cron Job(Optional):**
     ```bash
-   crontab -e
-   0 0 * * * /usr/bin/php /path/to/your/project/bin/console app:etl-process-data >> /path/to/your/project/var/log/cron.log 2>&1
-   ```
+        crontab -e
+        0 0 * * * /usr/bin/php /path/to/your/project/bin/console app:etl-process-data >> /path/to/your/project/var/log/cron.log 2>&1
+    ```
 
