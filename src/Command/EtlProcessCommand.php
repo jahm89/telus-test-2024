@@ -11,6 +11,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 use App\DataType\SummaryData;
 use App\Service\EtlProcessService;
+use App\Service\SftpService;
 
 use DateTime;
 
@@ -24,20 +25,25 @@ class EtlProcessCommand extends Command
     private $httpClient;
     const PATH_STORE_FOLDER = 'public/files/';
     private SummaryData $summaryData;
-    private $apiUrl;
+    private string $apiUrl;
+    private string $remotePath;
     private EtlProcessService $etlProcessService;
+    private SftpService $sftpService;
 
     public function __construct(
         HttpClientInterface $httpClient, 
         SummaryData $summaryData,
-        EtlProcessService $etlProcessService
+        EtlProcessService $etlProcessService,
+        SftpService $sftpService
     )
     {
         parent::__construct();
         $this->httpClient = $httpClient;
         $this->summaryData = $summaryData;
         $this->apiUrl = $_ENV['API_URL'];
+        $this->remotePath = $_ENV['SFTP_PATH'];
         $this->etlProcessService = $etlProcessService;
+        $this->sftpService = $sftpService;
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
@@ -108,6 +114,12 @@ class EtlProcessCommand extends Command
         $output->writeln("Storing database records...");
         $this->etlProcessService->create($this->summaryData, $summaryFileName, $today);
         $output->writeln("Storing database Done!");
+
+        $output->writeln("Uploading files to SFTP Server...");
+        $this->sftpService->uploadFile($rawDataFileName, $this->remotePath . $rawDataFileName);
+        $this->sftpService->uploadFile($etlFileName, $this->remotePath . $etlFileName);
+        $this->sftpService->uploadFile($summaryFileName, $this->remotePath . $summaryFileName);
+        $output->writeln("Uploading files to SFTP Server DONE!");
 
         return Command::SUCCESS;
     }
