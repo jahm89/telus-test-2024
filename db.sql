@@ -1,3 +1,5 @@
+CREATE DATABASE `telus_test` /*!40100 DEFAULT CHARACTER SET utf8 */;
+
 CREATE TABLE telus_test.header_process (
 	id INT auto_increment NOT NULL,
 	file_name varchar(100) NOT NULL,
